@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Xóc Đĩa - Cao Thấp VIP</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0f172a;
+      --card-bg: #1e293b;
+      --accent: #f59e0b;
+      --neon-glow: 0 0 15px rgba(245, 158, 11, 0.4);
+      --text-muted: #94a3b8;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: #f8fafc;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+      padding: 16px;
+      overflow-x: hidden;
+    }
+
+    .game-card {
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      position: relative;
+    }
+
+    .balance-box {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .balance-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .balance-value {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-action {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: #000;
+      font-weight: 800;
+      padding: 12px 20px;
+      border-radius: 12px;
+      transition: all 0.2s;
+      width: 100%;
+      cursor: pointer;
+      user-select: none;
+      border: none;
+    }
+
+    .btn-action:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: var(--neon-glow);
+    }
+
+    .btn-action:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-quick {
+      background: #334155;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+
+    .btn-quick:hover {
+      background: #475569;
+    }
+
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(6px);
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 24px;
+      width: 100%;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      color: var(--text-muted);
+      font-size: 20px;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 11px;
+    }
+
+    .history-table th, .history-table td {
+      padding: 7px 5px;
+      border-bottom: 1px solid #334155;
+    }
+
+    .history-table th {
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .badge-admin {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 8px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .extra-panel {
+      background: rgba(15,23,42,.72);
+      border: 1px solid #334155;
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 14px;
+    }
+
+    .bet-input {
+      width: 100%;
+      background: #0f172a;
+      border: 1px solid #475569;
+      border-radius: 8px;
+      padding: 9px;
+      color: #fff;
+    }
+
+    .history-scroll {
+      max-height: 220px;
+      overflow: auto;
+    }
+
+    /* XÓC ĐĨA & BÁT ÚP ANIMATION */
+    .plate-container {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      perspective: 1000px;
+    }
+
+    .plate {
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, #ffffff 0%, #cbd5e1 65%, #64748b 100%);
+      border: 8px solid #e2e8f0;
+      border-radius: 50%;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.4), 0 12px 28px rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+    }
+
+    .dice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      z-index: 5;
+      transition: transform 0.2s ease-out;
+    }
+
+    .dice {
+      width: 44px;
+      height: 44px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: inset 0 -4px 0 #cbd5e1, 0 5px 8px rgba(0,0,0,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 26px;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+      transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    .dice.red-dot {
+      color: #dc2626;
+    }
+
+    .bowl {
+      position: absolute;
+      width: 190px;
+      height: 190px;
+      background: radial-gradient(circle at 35% 35%, #0284c7 0%, #0369a1 50%, #0c4a6e 100%);
+      border: 5px solid #38bdf8;
+      border-radius: 50%;
+      box-shadow: inset 0 12px 24px rgba(255,255,255,0.35), 0 18px 36px rgba(0,0,0,0.7);
+      z-index: 10;
+      transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    .bowl::after {
+      content: '🎲 CAO THẤP';
+      font-size: 12px;
+      font-weight: 900;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 1px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .bowl.open {
+      transform: translateY(-145px) rotate(-22deg) scale(0.95);
+    }
+
+    .shaking-container {
+      animation: shakePlate 0.12s infinite alternate ease-in-out;
+    }
+
+    @keyframes shakePlate {
+      0% { transform: translate(-6px, -4px) rotate(-3deg); }
+      100% { transform: translate(6px, 4px) rotate(3deg); }
+    }
+
+    .dice-bounce .dice {
+      animation: diceBounce 0.15s infinite alternate;
+    }
+
+    @keyframes diceBounce {
+      0% { transform: translateY(0) scale(1); }
+      100% { transform: translateY(-8px) scale(1.05); }
+    }
+
+    .win-pulse {
+      animation: winPulse 0.6s ease-out;
+    }
+
+    @keyframes winPulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MODAL ĐĂNG NHẬP & ĐĂNG KÝ -->
+  <div id="modalLogin" class="modal active">
+    <div class="modal-content" style="max-width:380px;">
+      <!-- TAB CHUYỂN ĐỔI ĐĂNG NHẬP / ĐĂNG KÝ -->
+      <div class="flex border-b border-slate-700 mb-4 text-center">
+        <button id="tabLoginBtn" onclick="switchAuthTab('login')" class="w-1/2 py-2 font-black text-amber-400 border-b-2 border-amber-400 text-sm focus:outline-none">
+          🔑 ĐĂNG NHẬP
+        </button>
+        <button id="tabRegisterBtn" onclick="switchAuthTab('register')" class="w-1/2 py-2 font-bold text-slate-400 hover:text-slate-200 text-sm focus:outline-none">
+          📝 ĐĂNG KÝ
+        </button>
+      </div>
+
+      <!-- FORM ĐĂNG NHẬP -->
+      <form id="formLogin" onsubmit="handleLogin(event)" class="space-y-3">
+        <div>
+          <label class="block text-xs text-slate-300 font-bold mb-1">Tên tài khoản</label>
+          <input type="text" id="loginUser" placeholder="Nhập tài khoản..." required
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-400">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 font-bold mb-1">Mật khẩu</label>
+          <input type="password" id="loginPass" placeholder="Nhập mật khẩu..." required
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-400">
+        </div>
+
+        <div id="loginError" class="text-rose-500 text-xs text-center font-bold hidden">
+          ❌ Tài khoản hoặc mật khẩu không chính xác!
+        </div>
+
+        <button type="submit" class="btn-action bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 mt-2">
+          ĐĂNG NHẬP
+        </button>
+      </form>
+
+      <!-- FORM ĐĂNG KÝ MỚI -->
+      <form id="formRegister" onsubmit="handleRegister(event)" class="space-y-3 hidden">
+        <div>
+          <label class="block text-xs text-slate-300 font-bold mb-1">Tên tài khoản mới</label>
+          <input type="text" id="regUser" placeholder="Tên tài khoản (viết liền không dấu)..." required minlength="3"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-400">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 font-bold mb-1">Số điện thoại</label>
+          <input type="tel" id="regPhone" placeholder="Nhập số điện thoại..." required
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-400">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 font-bold mb-1">Mật khẩu</label>
+          <input type="password" id="regPass" placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)..." required minlength="6"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-400">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-300 font-bold mb-1">Xác nhận mật khẩu</label>
+          <input type="password" id="regPassConfirm" placeholder="Nhập lại mật khẩu..." required minlength="6"
+            class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm text-white focus:outline-none focus:border-amber-400">
+        </div>
+
+        <div id="regMsg" class="text-xs text-center font-bold hidden"></div>
+
+        <button type="submit" class="btn-action bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-2.5 mt-2">
+          ĐĂNG KÝ TÀI KHOẢN MỚI
+        </button>
+      </form>
+
+      <div class="relative flex py-3 items-center">
+        <div class="flex-grow border-t border-slate-700"></div>
+        <span class="flex-shrink mx-2 text-slate-500 text-xs">hoặc</span>
+        <div class="flex-grow border-t border-slate-700"></div>
+      </div>
+
+      <button onclick="loginAsGuest()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-600 font-bold py-2 rounded-lg text-xs">
+        🎮 Chơi Ngay (Chế Độ Khách)
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN GAME INTERFACE -->
+  <div class="game-card">
+    <!-- HEADER & STATUS -->
+    <div class="flex justify-between items-center mb-4">
+      <div>
+        <h1 class="text-lg font-extrabold text-amber-400 uppercase tracking-wide">🎲 XÓC ĐĨA CAO THẤP</h1>
+        <div class="flex items-center gap-2 mt-0.5">
+          <span id="dispUsername" class="text-xs text-slate-300 font-bold">Khách</span>
+          <span id="adminBadge" class="badge-admin hidden">ADMIN VIP</span>
+        </div>
+      </div>
+
+      <div class="flex gap-1.5">
+        <button id="btnAdminPanel" onclick="openModal('modalAdminLoans')" class="hidden text-xs bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/40 px-3 py-1.5 rounded-lg font-bold">
+          ⚡ Sổ Nợ & Admin
+        </button>
+        <button onclick="logout()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 px-2.5 py-1.5 rounded-lg font-bold" title="Đăng xuất">
+          🚪
+        </button>
+      </div>
+    </div>
+
+    <!-- BALANCE BOX -->
+    <div class="balance-box">
+      <div class="balance-label">SỐ DƯ ĐIỂM ẢO</div>
+      <div class="balance-value">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="#FFC83B"/><circle cx="12" cy="12" r="7" stroke="#B38200" stroke-width="1.5"/><text x="12" y="16" font-size="11" font-weight="900" fill="#B38200" text-anchor="middle">đ</text></svg>
+        <span id="dispBalance">10,000</span>
+      </div>
+      <div id="dispDebtInfo" style="display:none; font-size:11px; color:#ff3355; font-weight:800; cursor:pointer; margin-top:4px;" onclick="payDebt()">
+        ⚠️ Tổng nợ (+ Lãi 36%/ngày): <span id="debtAmount">0</span>đ <br>
+        <span class="text-[10px] text-amber-400 underline">(Bấm vào đây để trả nợ)</span>
+      </div>
+    </div>
+
+    <!-- BANKRUPT LOAN BANNER -->
+    <div id="bankruptBanner" style="display:none; flex-direction:column; gap:8px; background:linear-gradient(135deg, #2a050d, #140206); border:2px solid #ff1e42; padding:12px; border-radius:14px; margin-bottom:16px; text-align:center; box-shadow:var(--neon-glow);">
+      <div style="font-weight:900; color:#ff3355; font-size:13px; text-transform:uppercase;">🚨 BẠN ĐÃ PHÁ SẢN (0 ĐIỂM)!</div>
+      <div style="font-size:11px; color:var(--text-muted);">Vay ngay tín dụng đen (Lãi suất <b>36%/ngày</b>) để tiếp tục gỡ gạc!</div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-top:4px;">
+        <button class="btn-quick" style="background:#3d0814; border-color:#ff1e42; color:#ffc83b;" onclick="takeLoan(1000)">VAY 1,000đ</button>
+        <button class="btn-quick" style="background:#3d0814; border-color:#ff1e42; color:#ffc83b;" onclick="takeLoan(5000)">VAY 5,000đ</button>
+        <button class="btn-quick" style="background:#3d0814; border-color:#ff1e42; color:#ffc83b;" onclick="takeLoan(10000)">VAY 10,000đ</button>
+      </div>
+    </div>
+
+    <!-- GAME AREA -->
+    <div class="flex flex-col items-center justify-center my-3 gap-3">
+      <div class="plate-container" id="plateContainer">
+        <div class="plate">
+          <div class="dice-grid" id="diceGrid">
+            <div class="dice red-dot" id="dice1">⚀</div>
+            <div class="dice" id="dice2">⚁</div>
+            <div class="dice" id="dice3">⚂</div>
+          </div>
+        </div>
+        <div class="bowl" id="bowl" onclick="toggleBowl()"></div>
+      </div>
+
+      <div class="flex justify-between items-center w-full px-4 py-1.5 bg-slate-900/80 rounded-xl border border-slate-800 text-xs">
+        <span class="text-slate-400 font-bold">Tổng điểm 3 Xúc xắc:</span>
+        <span id="dispTotalPoint" class="font-black text-amber-400 text-sm">6 điểm (THẤP)</span>
+      </div>
+
+      <div id="gameMsg" class="h-5 text-xs font-bold text-amber-400 text-center">Chọn CAO (11-18) hoặc THẤP (3-10) để cược (1,000đ)</div>
+
+      <div class="grid grid-cols-2 gap-3 w-full mt-1">
+        <button id="btnHigh" onclick="playBet('HIGH')" class="btn-action bg-emerald-600 hover:bg-emerald-500 text-white">
+          ▲ CAO (11 - 18)
+        </button>
+        <button id="btnLow" onclick="playBet('LOW')" class="btn-action bg-rose-600 hover:bg-rose-500 text-white">
+          ▼ THẤP (3 - 10)
+        </button>
+      </div>
+    </div>
+
+    <!-- MỨC CƯỢC -->
+    <section class="extra-panel">
+      <div class="text-sm font-black text-amber-400 mb-2">🎯 ĐIỀU CHỈNH MỨC CƯỢC</div>
+      <div class="text-[11px] text-slate-400 mb-2">Hạn mức tối đa theo số dư: 10.000 → 1.000 | 100.000 → 10.000 | 1.000.000 → 100.000 | 10.000.000 → 1.000.000 điểm.</div>
+      <div class="flex flex-wrap gap-2 mb-2">
+        <button class="btn-quick" onclick="setBetAmount(1000)">1.000</button>
+        <button class="btn-quick" onclick="setBetAmount(10000)">10.000</button>
+        <button class="btn-quick" onclick="setBetAmount(100000)">100.000</button>
+        <button class="btn-quick" onclick="setBetAmount(1000000)">1.000.000</button>
+      </div>
+      <label for="betAmountInput" class="block text-xs text-slate-300 mb-1">Số điểm cược mỗi lượt</label>
+      <input id="betAmountInput" class="bet-input" type="number" min="1" step="1" value="1000" onchange="setBetAmount(this.value)">
+      <div id="betLimitInfo" class="text-[11px] text-emerald-400 mt-2"></div>
+    </section>
+
+    <!-- BIỂU ĐỒ -->
+    <section class="extra-panel">
+      <div class="flex justify-between items-center mb-2">
+        <div class="text-sm font-black text-amber-400">📈 BIỂU ĐỒ SỐ DƯ TÀI KHOẢN</div>
+        <div class="flex items-center gap-3 text-[10px] font-bold">
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Thắng</span>
+          <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Thua</span>
+        </div>
+      </div>
+      <canvas id="balanceChart" width="600" height="200" style="width:100%;height:auto;background:#0f172a;border-radius:10px"></canvas>
+      <div id="chartEmpty" class="text-xs text-slate-500 text-center mt-2">Biểu đồ sẽ cập nhật sau mỗi lượt cược.</div>
+    </section>
+
+    <!-- LỊCH SỬ -->
+    <section class="extra-panel">
+      <div class="text-sm font-black text-amber-400 mb-2">🧾 LỊCH SỬ CƯỢC CỦA TÀI KHOẢN</div>
+      <div class="history-scroll">
+        <table class="history-table">
+          <thead>
+            <tr><th>Thời gian</th><th>Cược</th><th>Kết quả</th><th>Điểm</th><th>Thay đổi</th><th>Số dư</th></tr>
+          </thead>
+          <tbody id="betHistoryBody">
+            <tr><td colspan="6" class="text-slate-500 text-center">Chưa có lịch sử cược.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- BẢNG XẾP HẠNG -->
+    <section class="extra-panel">
+      <div class="flex items-center justify-between gap-2 mb-2">
+        <div class="text-sm font-black text-amber-400">🏆 BẢNG XẾP HẠNG GIÀU NHẤT</div>
+        <span id="leaderboardCountdown" class="text-[10px] text-slate-400"></span>
+      </div>
+      <div class="text-[11px] text-slate-400 mb-2">BXH được làm mới mỗi giờ; số dư hiện tại vẫn được lưu riêng cho từng tài khoản.</div>
+      <div class="history-scroll">
+        <table class="history-table">
+          <thead>
+            <tr><th>Hạng</th><th>Tài khoản</th><th>Số dư</th></tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div style="margin-top: 12px; font-size: 11px; color: var(--text-muted); text-align: center; word-break: break-all; line-height: 1.4;">
+      Casino VIP - Trải nghiệm Xóc đĩa Bát úp sống động với âm thanh & chuyển động chân thực.
+    </div>
+  </div>
+
+  <!-- MODAL ADMIN -->
+  <div id="modalAdminLoans" class="modal">
+    <div class="modal-content" style="max-width:600px;">
+      <button class="modal-close" onclick="closeModal('modalAdminLoans')">✕</button>
+      <div class="modal-title flex items-center justify-center gap-2">
+        <span>🔐 QUẢN LÝ TÍN DỤNG & LÃI SUẤT (36%/NGÀY)</span>
+      </div>
+      <div style="font-size:11px; color:var(--text-muted); margin-bottom:12px; text-align:center;">
+        Quyền Admin: Bạn có thể chỉnh sửa số dư, theo dõi các khoản vay và tiền lãi dồn tích.
+      </div>
+
+      <div class="bg-slate-900 border border-amber-500/30 p-3 rounded-xl mb-4 flex items-center justify-between gap-2">
+        <div class="text-xs">
+          <div class="font-bold text-amber-400">⚡ Nạp điểm nhanh cho bản thân:</div>
+          <div class="text-slate-400 text-[10px]">Tài khoản: <span class="text-white font-bold">lamdepzai09</span></div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="adminAddSelfMoney(50000)" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-2.5 py-1.5 rounded-lg">+50k</button>
+          <button onclick="adminAddSelfMoney(500000)" class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-2.5 py-1.5 rounded-lg">+500k</button>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="history-table" style="font-size:11px;">
+          <thead>
+            <tr>
+              <th>Người chơi</th>
+              <th>SĐT</th>
+              <th>Điểm hiện tại</th>
+              <th>Nợ gốc</th>
+              <th>Tổng nợ (+ Lãi 36%)</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody id="adminLoanTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== SYSTEM STATE ====================
+    let currentUser = "Khách";
+    let isAdmin = false;
+    let isShaking = false;
+    let isBowlOpen = false;
+    let audioEnabled = true;
+    let bgmEnabled = true;
+
+    const DAILY_INTEREST_RATE = 0.36;
+    const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+    // Database simulation (admin + demo players)
+    let players = [
+      { id: 'admin', user: 'lamdepzai09', pass: '06032009', name: 'ADMIN (lamdepzai09)', phone: '0909***999', balance: 10000, debt: 0, loanTime: null, isSelf: true },
+      { id: 'p1', user: 'player_01', pass: '123456', name: 'Player_01', phone: '0901***888', balance: 12500, debt: 5000, loanTime: Date.now() - (ONE_DAY_MS * 1.5), isSelf: false },
+      { id: 'p2', user: 'player_02', pass: '123456', name: 'Player_02', phone: '0988***999', balance: 0, debt: 10000, loanTime: Date.now() - (ONE_DAY_MS * 3), isSelf: false }
+    ];
+
+    let selectedBet = 1000;
+    let betHistory = [];
+    let leaderboardSnapshot = [];
+    let leaderboardUpdatedAt = 0;
+    const SAVE_KEY = 'caoThapVipSaveV2';
+
+    // ==================== LOCALSTORAGE ====================
+    function loadSavedData() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+        if (Array.isArray(saved.players)) {
+          saved.players.forEach(sp => {
+            const existing = players.find(p => p.id === sp.id || p.user === sp.user);
+            if (existing) Object.assign(existing, sp);
+            else players.push(sp);
+          });
+        }
+        betHistory = Array.isArray(saved.betHistory) ? saved.betHistory : [];
+        leaderboardSnapshot = Array.isArray(saved.leaderboardSnapshot) ? saved.leaderboardSnapshot : [];
+        leaderboardUpdatedAt = Number(saved.leaderboardUpdatedAt) || 0;
+      } catch (e) {
+        console.warn('Không thể đọc dữ liệu đã lưu', e);
+      }
+    }
+
+    function saveData() {
+      try {
+        localStorage.setItem(SAVE_KEY, JSON.stringify({
+          players,
+          betHistory,
+          leaderboardSnapshot,
+          leaderboardUpdatedAt
+        }));
+      } catch (e) {
+        console.warn('Không thể lưu dữ liệu', e);
+      }
+    }
+
+    // ==================== BET LIMIT ====================
+    function getBetLimit(balance) {
+      if (balance >= 10000000) return 1000000;
+      if (balance >= 1000000) return 100000;
+      if (balance >= 100000) return 10000;
+      if (balance >= 10000) return 1000;
+      return Math.max(0, Math.min(1000, balance));
+    }
+
+    function setBetAmount(value) {
+      const player = getCurrentPlayerData();
+      const limit = getBetLimit(player.balance);
+      let amount = Math.floor(Number(value));
+      if (!Number.isFinite(amount) || amount < 1) amount = 1;
+      amount = Math.min(amount, limit, player.balance);
+      selectedBet = amount;
+      const input = document.getElementById('betAmountInput');
+      if (input) input.value = String(selectedBet);
+      updateBetInfo();
+    }
+
+    function updateBetInfo() {
+      const player = getCurrentPlayerData();
+      const limit = getBetLimit(player.balance);
+      const info = document.getElementById('betLimitInfo');
+      if (info) info.textContent = `Hạn mức lượt này: ${limit.toLocaleString()} điểm · Đang chọn: ${selectedBet.toLocaleString()} điểm`;
+      const input = document.getElementById('betAmountInput');
+      if (input) {
+        input.max = String(limit);
+        input.value = String(Math.min(selectedBet, limit, player.balance || 1));
+      }
+    }
+
+    // ==================== HISTORY & CHART ====================
+    function getAccountHistory() {
+      return betHistory.filter(h => h.user === currentUserKey());
+    }
+
+    function currentUserKey() {
+      return isAdmin ? 'lamdepzai09' : (currentUser === 'Khách' ? 'khach' : currentUser);
+    }
+
+    function renderHistoryAndChart() {
+      const rows = getAccountHistory().slice(-40).reverse();
+      const tbody = document.getElementById('betHistoryBody');
+      if (tbody) {
+        tbody.innerHTML = rows.length
+          ? rows.map(h => `<tr>
+              <td>${new Date(h.time).toLocaleTimeString('vi-VN')}</td>
+              <td>${h.bet.toLocaleString()}</td>
+              <td>${h.type === 'HIGH' ? 'CAO' : 'THẤP'}</td>
+              <td>${h.score}</td>
+              <td class="${h.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}">${h.change >= 0 ? '+' : ''}${h.change.toLocaleString()}</td>
+              <td>${h.balance.toLocaleString()}</td>
+            </tr>`).join('')
+          : '<tr><td colspan="6" class="text-slate-500 text-center">Chưa có lịch sử cược.</td></tr>';
+      }
+      drawBalanceChart(getAccountHistory().slice(-20));
+    }
+
+    function drawBalanceChart(rows) {
+      const canvas = document.getElementById('balanceChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, w, h);
+
+      if (!rows || !rows.length) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('Chưa có dữ liệu cược', 20, 35);
+        document.getElementById('chartEmpty').style.display = 'block';
+        return;
+      }
+      document.getElementById('chartEmpty').style.display = 'none';
+
+      const values = rows.map(r => r.balance);
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const range = Math.max(1, max - min);
+
+      // Grid lines
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1;
+      for (let i = 1; i < 4; i++) {
+        const y = i * h / 4;
+        ctx.beginPath();
+        ctx.moveTo(25, y);
+        ctx.lineTo(w - 15, y);
+        ctx.stroke();
+      }
+
+      const points = rows.map((r, i) => {
+        const x = 25 + (w - 45) * (rows.length === 1 ? 0.5 : i / (rows.length - 1));
+        const y = (h - 30) - ((r.balance - min) / range) * (h - 55);
+        return { x, y, change: r.change, balance: r.balance };
+      });
+
+      // Line
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      points.forEach((pt, i) => {
+        if (i === 0) ctx.moveTo(pt.x, pt.y);
+        else ctx.lineTo(pt.x, pt.y);
+      });
+      ctx.stroke();
+
+      // Data points
+      points.forEach((pt) => {
+        const isWin = pt.change >= 0;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 4.5, 0, Math.PI * 2);
+        ctx.fillStyle = isWin ? '#10b981' : '#ef4444';
+        ctx.fill();
+      });
+
+      // Min/Max labels
+      ctx.fillStyle = '#fbbf24';
+      ctx.font = '12px sans-serif';
+      ctx.fillText('Thấp nhất: ' + min.toLocaleString(), 25, 20);
+      ctx.fillText('Cao nhất: ' + max.toLocaleString(), w - 165, 20);
+    }
+
+    // ==================== LEADERBOARD ====================
+    function refreshLeaderboard(force = false) {
+      const now = Date.now();
+      if (force || !leaderboardUpdatedAt || now - leaderboardUpdatedAt >= 3600000) {
+        leaderboardSnapshot = players
+          .map(p => ({ id: p.id, user: p.user, name: p.name, balance: p.balance }))
+          .sort((a, b) => b.balance - a.balance);
+        leaderboardUpdatedAt = now;
+        saveData();
+      }
+      const body = document.getElementById('leaderboardBody');
+      if (body) {
+        body.innerHTML = leaderboardSnapshot.map((p, i) =>
+          `<tr>
+            <td>${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}</td>
+            <td class="font-bold">${p.name || p.user}</td>
+            <td class="text-amber-400 font-bold">${Number(p.balance).toLocaleString()}</td>
+          </tr>`
+        ).join('');
+      }
+      const next = Math.max(0, 3600000 - (now - leaderboardUpdatedAt));
+      const countdown = document.getElementById('leaderboardCountdown');
+      if (countdown) countdown.textContent = `Cập nhật sau ${Math.floor(next / 60000)} phút`;
+    }
+
+    // ==================== DICE ====================
+    const diceIcons = ['', '⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+    let currentDices = [1, 2, 3];
+
+    // ==================== AUDIO ====================
+    let synth, noiseSynth, bgmSynth, bgmLoop, bgmVolume;
+
+    function initAudio() {
+      try {
+        if (!synth && window.Tone) {
+          Tone.start();
+          synth = new Tone.PolySynth(Tone.Synth).toDestination();
+          synth.volume.value = -8;
+
+          noiseSynth = new Tone.NoiseSynth({
+            noise: { type: 'pink' },
+            envelope: { attack: 0.005, decay: 0.05, sustain: 0 }
+          }).toDestination();
+          noiseSynth.volume.value = -10;
+
+          bgmVolume = new Tone.Volume(-16).toDestination();
+          bgmSynth = new Tone.PolySynth(Tone.Synth, {
+            oscillator: { type: "triangle" },
+            envelope: { attack: 0.02, decay: 0.1, sustain: 0.2, release: 0.2 }
+          }).connect(bgmVolume);
+
+          const bgmNotes = [
+            { time: "0:0", note: ["C4", "E4", "G4"] },
+            { time: "0:1", note: ["E4", "G4"] },
+            { time: "0:2", note: ["G4", "B4", "D5"] },
+            { time: "0:3", note: ["E4", "G4"] },
+            { time: "1:0", note: ["F4", "A4", "C5"] },
+            { time: "1:1", note: ["A4", "C5"] },
+            { time: "1:2", note: ["G4", "B4", "D5"] },
+            { time: "1:3", note: ["C4", "E4", "G4"] }
+          ];
+
+          bgmLoop = new Tone.Part((time, value) => {
+            if (bgmEnabled) bgmSynth.triggerAttackRelease(value.note, "8n", time);
+          }, bgmNotes);
+
+          bgmLoop.loop = true;
+          bgmLoop.loopEnd = "2m";
+          Tone.Transport.bpm.value = 118;
+          Tone.Transport.start();
+          bgmLoop.start(0);
+        }
+      } catch (e) {
+        console.log("Audio init error:", e);
+      }
+    }
+
+    function setBgmVolume(isHigh) {
+      if (!bgmVolume) return;
+      try {
+        if (isHigh) {
+          bgmVolume.volume.rampTo(-6, 0.2);
+          if (window.Tone) Tone.Transport.bpm.rampTo(135, 0.3);
+        } else {
+          bgmVolume.volume.rampTo(-16, 0.4);
+          if (window.Tone) Tone.Transport.bpm.rampTo(118, 0.4);
+        }
+      } catch (e) {
+        console.log("BGM Volume ramp error:", e);
+      }
+    }
+
+    function playSound(type) {
+      if (!audioEnabled) return;
+      initAudio();
+      try {
+        if (type === 'shake') {
+          if (noiseSynth) noiseSynth.triggerAttackRelease("16n");
+        } else if (type === 'open') {
+          if (synth) synth.triggerAttackRelease(["C5", "E5", "G5"], "16n");
+        } else if (type === 'win') {
+          if (synth) {
+            const now = Tone.now();
+            synth.triggerAttackRelease("C5", "8n", now);
+            synth.triggerAttackRelease("E5", "8n", now + 0.1);
+            synth.triggerAttackRelease("G5", "8n", now + 0.2);
+            synth.triggerAttackRelease("C6", "4n", now + 0.3);
+          }
+        } else if (type === 'lose') {
+          if (synth) {
+            const now = Tone.now();
+            synth.triggerAttackRelease("A3", "8n", now);
+            synth.triggerAttackRelease("F3", "4n", now + 0.15);
+          }
+        } else if (type === 'click') {
+          if (synth) synth.triggerAttackRelease("C4", "32n");
+        }
+      } catch (e) {
+        console.log("Sound play error:", e);
+      }
+    }
+
+    // ==================== DEBT ====================
+    function calculateTotalDebt(player) {
+      if (!player.debt || player.debt <= 0 || !player.loanTime) return 0;
+      const timePassedMs = Date.now() - player.loanTime;
+      const daysPassed = timePassedMs / ONE_DAY_MS;
+      const total = Math.round(player.debt * (1 + (DAILY_INTEREST_RATE * daysPassed)));
+      return Math.max(player.debt, total);
+    }
+
+    function getCurrentPlayerData() {
+      if (isAdmin) return players.find(p => p.user === 'lamdepzai09');
+      if (currentUser !== 'Khách') {
+        const found = players.find(p => p.user === currentUser);
+        if (found) return found;
+      }
+      return players.find(p => p.id === 'guest') || { balance: 10000, debt: 0, loanTime: null };
+    }
+
+    // ==================== AUTH (LOGIN / REGISTER) ====================
+    function switchAuthTab(tab) {
+      playSound('click');
+      const formLogin = document.getElementById('formLogin');
+      const formRegister = document.getElementById('formRegister');
+      const tabLoginBtn = document.getElementById('tabLoginBtn');
+      const tabRegisterBtn = document.getElementById('tabRegisterBtn');
+
+      if (tab === 'login') {
+        formLogin.classList.remove('hidden');
+        formRegister.classList.add('hidden');
+        tabLoginBtn.className = "w-1/2 py-2 font-black text-amber-400 border-b-2 border-amber-400 text-sm focus:outline-none";
+        tabRegisterBtn.className = "w-1/2 py-2 font-bold text-slate-400 hover:text-slate-200 text-sm focus:outline-none";
+      } else {
+        formLogin.classList.add('hidden');
+        formRegister.classList.remove('hidden');
+        tabRegisterBtn.className = "w-1/2 py-2 font-black text-amber-400 border-b-2 border-amber-400 text-sm focus:outline-none";
+        tabLoginBtn.className = "w-1/2 py-2 font-bold text-slate-400 hover:text-slate-200 text-sm focus:outline-none";
+      }
+      document.getElementById('loginError').classList.add('hidden');
+      const regMsg = document.getElementById('regMsg');
+      regMsg.classList.add('hidden');
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      playSound('click');
+      const user = document.getElementById('loginUser').value.trim();
+      const pass = document.getElementById('loginPass').value.trim();
+
+      // Admin login
+      if (user === 'lamdepzai09' && pass === '06032009') {
+        isAdmin = true;
+        currentUser = 'lamdepzai09';
+        document.getElementById('loginError').classList.add('hidden');
+        closeModal('modalLogin');
+        updateUI();
+        return;
+      }
+
+      // Normal user login
+      const matched = players.find(p => p.user.toLowerCase() === user.toLowerCase() && p.pass === pass);
+      if (matched) {
+        isAdmin = false;
+        currentUser = matched.user;
+        document.getElementById('loginError').classList.add('hidden');
+        closeModal('modalLogin');
+        updateUI();
+      } else {
+        document.getElementById('loginError').classList.remove('hidden');
+      }
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      playSound('click');
+      const user = document.getElementById('regUser').value.trim();
+      const phone = document.getElementById('regPhone').value.trim();
+      const pass = document.getElementById('regPass').value.trim();
+      const passConfirm = document.getElementById('regPassConfirm').value.trim();
+      const regMsg = document.getElementById('regMsg');
+
+      regMsg.classList.remove('hidden', 'text-rose-500', 'text-emerald-400');
+
+      // Validation
+      if (user.length < 3) {
+        regMsg.classList.add('text-rose-500');
+        regMsg.innerText = "❌ Tên tài khoản phải từ 3 ký tự trở lên!";
+        return;
+      }
+
+      if (!/^[a-zA-Z0-9_]+$/.test(user)) {
+        regMsg.classList.add('text-rose-500');
+        regMsg.innerText = "❌ Tên tài khoản chỉ được chứa chữ cái, số và dấu gạch dưới!";
+        return;
+      }
+
+      if (pass.length < 6) {
+        regMsg.classList.add('text-rose-500');
+        regMsg.innerText = "❌ Mật khẩu phải từ 6 ký tự trở lên!";
+        return;
+      }
+
+      if (pass !== passConfirm) {
+        regMsg.classList.add('text-rose-500');
+        regMsg.innerText = "❌ Mật khẩu xác nhận không khớp!";
+        return;
+      }
+
+      if (!phone || phone.length < 9) {
+        regMsg.classList.add('text-rose-500');
+        regMsg.innerText = "❌ Vui lòng nhập số điện thoại hợp lệ!";
+        return;
+      }
+
+      // Check duplicate username
+      const exists = players.some(p => p.user.toLowerCase() === user.toLowerCase());
+      if (exists || user.toLowerCase() === 'khách' || user.toLowerCase() === 'khach' || user.toLowerCase() === 'lamdepzai09') {
+        regMsg.classList.add('text-rose-500');
+        regMsg.innerText = "❌ Tên tài khoản đã tồn tại trên hệ thống!";
+        return;
+      }
+
+      // Create new player
+      const newPlayer = {
+        id: 'usr_' + Date.now(),
+        user: user,
+        pass: pass,
+        name: user,
+        phone: phone,
+        balance: 10000,
+        debt: 0,
+        loanTime: null,
+        isSelf: false
+      };
+
+      players.push(newPlayer);
+      isAdmin = false;
+      currentUser = user;
+      saveData();
+
+      regMsg.classList.add('text-emerald-400');
+      regMsg.innerText = "🎉 Đăng ký thành công! Đang vào game...";
+      playSound('win');
+
+      setTimeout(() => {
+        closeModal('modalLogin');
+        updateUI();
+      }, 900);
+    }
+
+    function loginAsGuest() {
+      playSound('click');
+      isAdmin = false;
+      currentUser = "Khách";
+      if (!players.find(p => p.id === 'guest')) {
+        players.push({
+          id: 'guest',
+          user: 'khach',
+          name: 'Khách Chơi',
+          phone: 'Chưa ĐK',
+          balance: 10000,
+          debt: 0,
+          loanTime: null,
+          isSelf: false
+        });
+      }
+      closeModal('modalLogin');
+      updateUI();
+    }
+
+    function logout() {
+      playSound('click');
+      // Reset form
+      document.getElementById('loginUser').value = '';
+      document.getElementById('loginPass').value = '';
+      document.getElementById('regUser').value = '';
+      document.getElementById('regPhone').value = '';
+      document.getElementById('regPass').value = '';
+      document.getElementById('regPassConfirm').value = '';
+      document.getElementById('loginError').classList.add('hidden');
+      document.getElementById('regMsg').classList.add('hidden');
+      switchAuthTab('login');
+      openModal('modalLogin');
+    }
+
+    // ==================== BOWL ====================
+    function toggleBowl() {
+      if (isShaking) return;
+      isBowlOpen = !isBowlOpen;
+      playSound('open');
+      const bowlEl = document.getElementById('bowl');
+      if (isBowlOpen) bowlEl.classList.add('open');
+      else bowlEl.classList.remove('open');
+    }
+
+    // ==================== UPDATE UI ====================
+    function updateUI() {
+      const player = getCurrentPlayerData();
+      const totalDebt = calculateTotalDebt(player);
+
+      document.getElementById('dispUsername').innerText = isAdmin ? 'lamdepzai09' : currentUser;
+
+      if (isAdmin) {
+        document.getElementById('adminBadge').classList.remove('hidden');
+        document.getElementById('btnAdminPanel').classList.remove('hidden');
+      } else {
+        document.getElementById('adminBadge').classList.add('hidden');
+        document.getElementById('btnAdminPanel').classList.add('hidden');
+      }
+
+      document.getElementById('dispBalance').innerText = player.balance.toLocaleString();
+
+      const debtInfo = document.getElementById('dispDebtInfo');
+      const bankruptBanner = document.getElementById('bankruptBanner');
+
+      if (totalDebt > 0) {
+        debtInfo.style.display = 'block';
+        document.getElementById('debtAmount').innerText = totalDebt.toLocaleString();
+      } else {
+        debtInfo.style.display = 'none';
+      }
+
+      if (player.balance <= 0) {
+        bankruptBanner.style.display = 'flex';
+      } else {
+        bankruptBanner.style.display = 'none';
+      }
+
+      // Render dice
+      for (let i = 1; i <= 3; i++) {
+        const val = currentDices[i - 1];
+        const diceEl = document.getElementById(`dice${i}`);
+        diceEl.innerText = diceIcons[val];
+        if (val === 1) diceEl.classList.add('red-dot');
+        else diceEl.classList.remove('red-dot');
+      }
+
+      const totalScore = currentDices.reduce((a, b) => a + b, 0);
+      const isHigh = totalScore >= 11;
+      document.getElementById('dispTotalPoint').innerText = `${totalScore} điểm (${isHigh ? 'CAO' : 'THẤP'})`;
+
+      renderAdminTable();
+      updateBetInfo();
+      renderHistoryAndChart();
+      refreshLeaderboard(false);
+      saveData();
+    }
+
+    // ==================== GAMEPLAY ====================
+    function playBet(betType) {
+      if (isShaking) return;
+      initAudio();
+      const player = getCurrentPlayerData();
+
+      const bet = Math.min(selectedBet, getBetLimit(player.balance), player.balance);
+      if (bet < 1) {
+        alert('Số dư không đủ để cược.');
+        return;
+      }
+      selectedBet = bet;
+
+      const bowlEl = document.getElementById('bowl');
+      const plateContainer = document.getElementById('plateContainer');
+      const diceGrid = document.getElementById('diceGrid');
+      const msgEl = document.getElementById('gameMsg');
+      const btnHigh = document.getElementById('btnHigh');
+      const btnLow = document.getElementById('btnLow');
+
+      // Close bowl & start shaking
+      isBowlOpen = false;
+      bowlEl.classList.remove('open');
+      isShaking = true;
+      btnHigh.disabled = true;
+      btnLow.disabled = true;
+      msgEl.innerText = "🎲 Đang xóc đĩa... Chờ mở bát!";
+      msgEl.className = "h-5 text-xs font-bold text-amber-400 text-center";
+
+      setBgmVolume(true);
+      plateContainer.classList.add('shaking-container');
+      diceGrid.classList.add('dice-bounce');
+
+      let shakeCount = 0;
+      const shakeInterval = setInterval(() => {
+        playSound('shake');
+        shakeCount++;
+        currentDices = [
+          Math.floor(Math.random() * 6) + 1,
+          Math.floor(Math.random() * 6) + 1,
+          Math.floor(Math.random() * 6) + 1
+        ];
+        updateUI();
+        if (shakeCount >= 10) clearInterval(shakeInterval);
+      }, 100);
+
+      setTimeout(() => {
+        plateContainer.classList.remove('shaking-container');
+        diceGrid.classList.remove('dice-bounce');
+
+        currentDices = [
+          Math.floor(Math.random() * 6) + 1,
+          Math.floor(Math.random() * 6) + 1,
+          Math.floor(Math.random() * 6) + 1
+        ];
+
+        const totalScore = currentDices.reduce((a, b) => a + b, 0);
+        const isHighResult = totalScore >= 11;
+
+        isBowlOpen = true;
+        bowlEl.classList.add('open');
+        playSound('open');
+        setBgmVolume(false);
+
+        setTimeout(() => {
+          const won = (betType === 'HIGH' && isHighResult) || (betType === 'LOW' && !isHighResult);
+          if (won) {
+            player.balance += bet;
+            playSound('win');
+            msgEl.innerText = `🎉 Mở bát: ${totalScore} điểm (${isHighResult ? 'CAO' : 'THẤP'}) - Thắng +${bet.toLocaleString()} điểm!`;
+            msgEl.className = "h-5 text-xs font-bold text-emerald-400 text-center win-pulse";
+          } else {
+            player.balance -= bet;
+            playSound('lose');
+            msgEl.innerText = `❌ Mở bát: ${totalScore} điểm (${isHighResult ? 'CAO' : 'THẤP'}) - Thua -${bet.toLocaleString()} điểm!`;
+            msgEl.className = "h-5 text-xs font-bold text-rose-400 text-center";
+          }
+
+          const change = won ? bet : -bet;
+          betHistory.push({
+            user: currentUserKey(),
+            time: Date.now(),
+            bet,
+            type: betType,
+            score: totalScore,
+            change,
+            balance: player.balance
+          });
+          saveData();
+          isShaking = false;
+          btnHigh.disabled = false;
+          btnLow.disabled = false;
+          updateUI();
+        }, 400);
+      }, 1300);
+    }
+
+    // ==================== LOAN ====================
+    function takeLoan(amount) {
+      playSound('click');
+      const player = getCurrentPlayerData();
+      const currentTotalDebt = calculateTotalDebt(player);
+      player.balance += amount;
+      player.debt = currentTotalDebt + amount;
+      player.loanTime = Date.now();
+      updateUI();
+    }
+
+    function payDebt() {
+      playSound('click');
+      const player = getCurrentPlayerData();
+      const totalDebt = calculateTotalDebt(player);
+
+      if (player.balance >= totalDebt) {
+        player.balance -= totalDebt;
+        player.debt = 0;
+        player.loanTime = null;
+        updateUI();
+        playSound('win');
+        alert('🎉 Bạn đã trả hết nợ và tiền lãi thành công!');
+      } else {
+        playSound('lose');
+        alert(`Số dư (${player.balance.toLocaleString()}đ) không đủ để trả tổng nợ cả gốc lẫn lãi (${totalDebt.toLocaleString()}đ)!`);
+      }
+    }
+
+    // ==================== ADMIN ====================
+    function renderAdminTable() {
+      const tbody = document.getElementById('adminLoanTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      players.forEach(p => {
+        const totalDebt = calculateTotalDebt(p);
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="font-bold text-slate-200">${p.name}</td>
+          <td class="text-slate-400">${p.phone}</td>
+          <td class="text-amber-400 font-bold">${p.balance.toLocaleString()}đ</td>
+          <td class="text-slate-400 font-bold">${p.debt ? p.debt.toLocaleString() + 'đ' : '0đ'}</td>
+          <td class="text-rose-400 font-bold">${totalDebt > 0 ? totalDebt.toLocaleString() + 'đ' : '0đ'}</td>
+          <td>
+            <div class="flex gap-1">
+              <button onclick="adminModifyMoney('${p.id}', 10000)" class="px-2 py-1 bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 rounded font-bold text-[10px] hover:bg-emerald-600/50">+10k</button>
+              <button onclick="adminModifyMoney('${p.id}', -10000)" class="px-2 py-1 bg-rose-600/30 border border-rose-500/40 text-rose-300 rounded font-bold text-[10px] hover:bg-rose-600/50">-10k</button>
+              <button onclick="adminSetCustomMoney('${p.id}')" class="px-2 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded font-bold text-[10px] hover:bg-amber-500/40">Sửa</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function adminAddSelfMoney(amount) {
+      playSound('win');
+      const adminAcc = players.find(p => p.user === 'lamdepzai09');
+      if (adminAcc) {
+        adminAcc.balance += amount;
+        updateUI();
+      }
+    }
+
+    function adminModifyMoney(playerId, amount) {
+      playSound('click');
+      const target = players.find(p => p.id === playerId);
+      if (target) {
+        target.balance = Math.max(0, target.balance + amount);
+        updateUI();
+      }
+    }
+
+    function adminSetCustomMoney(playerId) {
+      playSound('click');
+      const target = players.find(p => p.id === playerId);
+      if (target) {
+        const val = prompt(`Nhập số điểm mới cho ${target.name}:`, target.balance);
+        if (val !== null && !isNaN(val)) {
+          target.balance = Math.max(0, parseInt(val));
+          updateUI();
+        }
+      }
+    }
+
+    // ==================== MODAL ====================
+    function openModal(id) {
+      playSound('click');
+      document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) {
+      playSound('click');
+      document.getElementById(id).classList.remove('active');
+    }
+
+    // ==================== INIT ====================
+    setInterval(updateUI, 10000);
+    loadSavedData();
+    refreshLeaderboard(true);
+    updateUI();
+    setInterval(() => refreshLeaderboard(false), 30000);
+  </script>
+</body>
+</html>
